@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Tester - Student Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #333; text-align: center; margin-bottom: 20px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .nav a { padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
+        .api-section { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .api-section h3 { color: #667eea; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        .api-endpoint { margin-bottom: 15px; padding: 15px; background: #f9f9f9; border-radius: 5px; }
+        .api-endpoint .method { display: inline-block; padding: 5px 10px; border-radius: 3px; font-weight: bold; margin-right: 10px; }
+        .api-endpoint .method.get { background: #28a745; color: white; }
+        .api-endpoint .method.post { background: #007bff; color: white; }
+        .api-endpoint .method.put { background: #ffc107; color: black; }
+        .api-endpoint .method.delete { background: #dc3545; color: white; }
+        .api-endpoint .url { font-family: monospace; color: #333; }
+        .api-endpoint button { margin-left: 10px; padding: 5px 15px; background: #667eea; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .api-endpoint button:hover { background: #5568d3; }
+        .result { margin-top: 10px; padding: 15px; background: #1e1e1e; color: #d4d4d4; border-radius: 5px; font-family: monospace; font-size: 0.9em; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+        .result.error { background: #721c24; color: #f8d7da; }
+        .test-form { margin-top: 10px; }
+        .test-form input, .test-form textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 3px; font-family: monospace; }
+        .test-form button { padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 API Tester</h1>
+        <div class="nav">
+            <a href="/">Home</a>
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/students.html">Students</a>
+            <a href="/search.html">Search</a>
+            <a href="/jobs.html">Jobs</a>
+            <a href="/companies.html">Companies</a>
+            <a href="/applications.html">Applications</a>
+            <a href="/analytics.html">Analytics</a>
+        </div>
+        
+        <div class="api-section">
+            <h3>📊 Analytics</h3>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/analytics/stats</span>
+                <button onclick="testApi('/api/analytics/stats')">Test</button>
+                <div class="result" id="result-analytics"></div>
+            </div>
+        </div>
+        
+        <div class="api-section">
+            <h3>👥 Students</h3>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/students?page=1&limit=5</span>
+                <button onclick="testApi('/api/students?page=1&limit=5')">Test</button>
+                <div class="result" id="result-students"></div>
+            </div>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/students/1</span>
+                <button onclick="testApi('/api/students/1')">Test</button>
+                <div class="result" id="result-student-1"></div>
+            </div>
+            <div class="api-endpoint">
+                <span class="method post">POST</span>
+                <span class="url">/api/students</span>
+                <button onclick="testPostStudent()">Test</button>
+                <div class="test-form">
+                    <textarea id="student-data" rows="3">{"name":"Test Student","branch":"CSE","year":3,"CGPA":8.5,"email":"test@example.com"}</textarea>
+                </div>
+                <div class="result" id="result-post-student"></div>
+            </div>
+        </div>
+        
+        <div class="api-section">
+            <h3>🔍 Search</h3>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/students/search?q=rahul&branch=CSE</span>
+                <button onclick="testApi('/api/students/search?q=rahul&branch=CSE')">Test</button>
+                <div class="result" id="result-search"></div>
+            </div>
+        </div>
+        
+        <div class="api-section">
+            <h3>💼 Jobs</h3>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/jobs</span>
+                <button onclick="testApi('/api/jobs')">Test</button>
+                <div class="result" id="result-jobs"></div>
+            </div>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/jobs/1/eligible</span>
+                <button onclick="testApi('/api/jobs/1/eligible')">Test</button>
+                <div class="result" id="result-eligible"></div>
+            </div>
+        </div>
+        
+        <div class="api-section">
+            <h3>🏢 Companies</h3>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/companies</span>
+                <button onclick="testApi('/api/companies')">Test</button>
+                <div class="result" id="result-companies"></div>
+            </div>
+        </div>
+        
+        <div class="api-section">
+            <h3>📝 Applications</h3>
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/api/applications</span>
+                <button onclick="testApi('/api/applications')">Test</button>
+                <div class="result" id="result-applications"></div>
+            </div>
+            <div class="api-endpoint">
+                <span class="method post">POST</span>
+                <span class="url">/api/apply</span>
+                <button onclick="testApply()">Test</button>
+                <div class="test-form">
+                    <input type="text" id="apply-student-id" placeholder="student_id" value="1">
+                    <input type="text" id="apply-job-id" placeholder="job_id" value="1">
+                </div>
+                <div class="result" id="result-apply"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function testApi(url) {
+            var id = url.split('/').pop().replace(/[^a-z0-9]/g, '-');
+            if (url.includes('?')) id = url.split('?')[0].split('/').pop() + '-' + url.split('?')[1].replace(/[^a-z0-9]/g, '-');
+            
+            var resultDiv = document.getElementById('result-' + id);
+            if (!resultDiv) resultDiv = document.getElementById('result-analytics');
+            
+            try {
+                var res = await fetch(url);
+                var data = await res.json();
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result';
+            } catch(e) {
+                resultDiv.textContent = 'Error: ' + e.message;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testPostStudent() {
+            var data = document.getElementById('student-data').value;
+            try {
+                var json = JSON.parse(data);
+                var res = await fetch('/api/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(json)
+                });
+                var result = await res.json();
+                document.getElementById('result-post-student').textContent = JSON.stringify(result, null, 2);
+                document.getElementById('result-post-student').className = 'result';
+            } catch(e) {
+                document.getElementById('result-post-student').textContent = 'Error: ' + e.message;
+                document.getElementById('result-post-student').className = 'result error';
+            }
+        }
+        
+        async function testApply() {
+            var studentId = document.getElementById('apply-student-id').value;
+            var jobId = document.getElementById('apply-job-id').value;
+            
+            try {
+                var res = await fetch('/api/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: parseInt(studentId), job_id: parseInt(jobId) })
+                });
+                var result = await res.json();
+                document.getElementById('result-apply').textContent = JSON.stringify(result, null, 2);
+                document.getElementById('result-apply').className = 'result';
+            } catch(e) {
+                document.getElementById('result-apply').textContent = 'Error: ' + e.message;
+                document.getElementById('result-apply').className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
+
+

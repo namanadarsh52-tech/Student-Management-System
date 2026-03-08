@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSEAS - Smart Skill & Employment Analytics</title>
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        section {
+            margin: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        ul {
+            list-style-type: square;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Smart Skill & Employment Analytics System (SSEAS)</h1>
+</header>
+
+<section>
+    <h2>Available Jobs</h2>
+    <ul>
+        <li>Data Analyst (Min CGPA: 7.5, Skill: Python)</li>
+        <li>Software Developer (Min CGPA: 7.0, Skill: Python + SQL)</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Check Eligible Students</h2>
+    <button onclick="checkEligibility()">Show Eligible Students for Data Analyst</button>
+
+    <h3>Eligible Students:</h3>
+    <ul id="result"></ul>
+</section>
+
+<script>
+    // Sample student data
+    const students = [
+        { name: "Rahul", cgpa: 8.5, skills: ["Python", "SQL"] },
+        { name: "Anita", cgpa: 7.8, skills: ["Python", "Data Analysis"] },
+        { name: "Vikram", cgpa: 6.9, skills: ["SQL"] }
+    ];
+
+    function checkEligibility() {
+        const resultList = document.getElementById("result");
+        resultList.innerHTML = "";
+
+        students.forEach(student => {
+            if (student.cgpa >= 7.5 && student.skills.includes("Python")) {
+                let li = document.createElement("li");
+                li.textContent = student.name;
+                resultList.appendChild(li);
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
