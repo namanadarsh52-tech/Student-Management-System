@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Applications - Student Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #333; text-align: center; margin-bottom: 20px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .nav a { padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
+        .nav a:hover { background: #5568d3; }
+        .filters { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .filters select, .filters input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; }
+        .filters button { padding: 8px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .filters button:hover { background: #5568d3; }
+        table { width: 100%; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th { background: #667eea; color: white; padding: 15px; text-align: left; }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        .status { padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; display: inline-block; }
+        .status.pending { background: #fff3cd; color: #856404; }
+        .status.accepted { background: #d4edda; color: #155724; }
+        .status.rejected { background: #f8d7da; color: #721c24; }
+        .status.interview { background: #cce5ff; color: #004085; }
+        .actions { display: flex; gap: 5px; }
+        .actions button { padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; font-size: 0.85em; }
+        .actions .accept { background: #28a745; color: white; }
+        .actions .reject { background: #dc3545; color: white; }
+        .actions .interview { background: #007bff; color: white; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .error { text-align: center; padding: 40px; color: red; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .stat-card h3 { color: #667eea; font-size: 2em; }
+        .stat-card p { color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Application Tracking</h1>
+        <div class="nav">
+            <a href="/">Home</a>
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/students.html">Students</a>
+            <a href="/search.html">Search</a>
+            <a href="/jobs.html">Jobs</a>
+            <a href="/companies.html">Companies</a>
+            <a href="/analytics.html">Analytics</a>
+        </div>
+        
+        <div class="stats" id="stats"></div>
+        
+        <div class="filters">
+            <select id="statusFilter">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="rejected">Rejected</option>
+                <option value="interview">Interview</option>
+            </select>
+            <button onclick="loadApplications()">Filter</button>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student</th>
+                    <th>CGPA</th>
+                    <th>Job</th>
+                    <th>Company</th>
+                    <th>Applied Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="applications"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        async function loadApplications() {
+            try {
+                var res = await fetch('/api/applications');
+                var applications = await res.json();
+                
+                var statusFilter = document.getElementById('statusFilter').value;
+                if (statusFilter) {
+                    applications = applications.filter(function(a) { return a.status === statusFilter; });
+                }
+                
+                var stats = { pending: 0, accepted: 0, rejected: 0, interview: 0 };
+                applications.forEach(function(a) { 
+                    if (stats[a.status] !== undefined) stats[a.status]++; 
+                });
+                
+                document.getElementById('stats').innerHTML = 
+                    '<div class="stat-card"><h3>' + applications.length + '</h3><p>Total Applications</p></div>' +
+                    '<div class="stat-card"><h3>' + stats.pending + '</h3><p>Pending</p></div>' +
+                    '<div class="stat-card"><h3>' + stats.accepted + '</h3><p>Accepted</p></div>' +
+                    '<div class="stat-card"><h3>' + stats.rejected + '</h3><p>Rejected</p></div>';
+                
+                if (applications.length === 0) {
+                    document.getElementById('applications').innerHTML = '<tr><td colspan="8" class="loading">No applications found</td></tr>';
+                    return;
+                }
+                
+                var html = '';
+                for (var i = 0; i < applications.length; i++) {
+                    var a = applications[i];
+                    var date = new Date(a.applied_date).toLocaleDateString();
+                    html += '<tr>';
+                    html += '<td>' + a.application_id + '</td>';
+                    html += '<td>' + a.student_name + '</td>';
+                    html += '<td>' + a.CGPA + '</td>';
+                    html += '<td>' + a.job_title + '</td>';
+                    html += '<td>' + a.company_name + '</td>';
+                    html += '<td>' + date + '</td>';
+                    html += '<td><span class="status ' + a.status + '">' + a.status.toUpperCase() + '</span></td>';
+                    html += '<td class="actions">';
+                    if (a.status === 'pending') {
+                        html += '<button class="interview" onclick="updateStatus(' + a.application_id + ', \'interview\')">Interview</button>';
+                        html += '<button class="accept" onclick="updateStatus(' + a.application_id + ', \'accepted\')">Accept</button>';
+                        html += '<button class="reject" onclick="updateStatus(' + a.application_id + ', \'rejected\')">Reject</button>';
+                    } else if (a.status === 'interview') {
+                        html += '<button class="accept" onclick="updateStatus(' + a.application_id + ', \'accepted\')">Accept</button>';
+                        html += '<button class="reject" onclick="updateStatus(' + a.application_id + ', \'rejected\')">Reject</button>';
+                    }
+                    html += '</td>';
+                    html += '</tr>';
+                }
+                document.getElementById('applications').innerHTML = html;
+                
+            } catch(e) {
+                console.error(e);
+                document.getElementById('applications').innerHTML = '<tr><td colspan="8" class="error">Error loading applications</td></tr>';
+            }
+        }
+        
+        async function updateStatus(applicationId, status) {
+            if (!confirm('Update status to ' + status + '?')) return;
+            
+            try {
+                var res = await fetch('/api/applications/' + applicationId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: status })
+                });
+                
+                if (res.ok) {
+                    alert('Status updated!');
+                    loadApplications();
+                } else {
+                    var data = await res.json();
+                    alert('Error: ' + data.error);
+                }
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        loadApplications();
+    </script>
+</body>
+</html>
+
+

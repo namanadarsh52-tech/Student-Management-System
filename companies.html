@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Companies - Student Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #333; text-align: center; margin-bottom: 20px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .nav a { padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
+        .nav a:hover { background: #5568d3; }
+        .company-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .company-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .company-card h3 { color: #667eea; margin-bottom: 10px; }
+        .company-card p { color: #666; margin: 5px 0; }
+        .company-card .stats { display: flex; gap: 15px; margin-top: 15px; }
+        .company-card .stat { background: #f0f0f0; padding: 10px 15px; border-radius: 5px; text-align: center; flex: 1; }
+        .company-card .stat span { display: block; font-size: 1.5em; color: #667eea; font-weight: bold; }
+        .company-card .stat small { color: #666; }
+        .company-card .jobs { margin-top: 15px; }
+        .company-card .job { background: #f9f9f9; padding: 10px; margin: 5px 0; border-radius: 5px; font-size: 0.9em; }
+        .company-card .job .salary { color: #4CAF50; font-weight: bold; }
+        .company-card .job .cgpa { color: #ff9800; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .error { text-align: center; padding: 40px; color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Companies</h1>
+        <div class="nav">
+            <a href="/">Home</a>
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/students.html">Students</a>
+            <a href="/search.html">Search</a>
+            <a href="/jobs.html">Jobs</a>
+            <a href="/applications.html">Applications</a>
+            <a href="/analytics.html">Analytics</a>
+        </div>
+        
+        <div id="companies" class="company-grid">
+            <p class="loading">Loading companies...</p>
+        </div>
+    </div>
+    
+    <script>
+        async function loadCompanies() {
+            try {
+                var res = await fetch('/api/companies');
+                var companies = await res.json();
+                
+                var html = '';
+                for (var i = 0; i < companies.length; i++) {
+                    var c = companies[i];
+                    html += '<div class="company-card">';
+                    html += '<h3>' + c.company_name + '</h3>';
+                    html += '<p>📍 ' + c.location + '</p>';
+                    html += '<div class="stats">';
+                    html += '<div class="stat"><span id="jobs-' + c.company_id + '">0</span><small>Jobs</small></div>';
+                    html += '<div class="stat"><span id="placed-' + c.company_id + '">0</span><small>Placed</small></div>';
+                    html += '</div>';
+                    html += '<div class="jobs" id="company-jobs-' + c.company_id + '"></div>';
+                    html += '</div>';
+                    
+                    // Load company details
+                    loadCompanyDetails(c.company_id);
+                }
+                document.getElementById('companies').innerHTML = html || '<p class="error">No companies found</p>';
+                
+            } catch(e) {
+                console.error(e);
+                document.getElementById('companies').innerHTML = '<p class="error">Error loading companies. Make sure Flask server is running!</p>';
+            }
+        }
+        
+        async function loadCompanyDetails(companyId) {
+            try {
+                var res = await fetch('/api/companies/' + companyId);
+                var data = await res.json();
+                
+                if (document.getElementById('jobs-' + companyId)) {
+                    document.getElementById('jobs-' + companyId).textContent = data.jobs ? data.jobs.length : 0;
+                }
+                if (document.getElementById('placed-' + companyId)) {
+                    document.getElementById('placed-' + companyId).textContent = data.placed_students || 0;
+                }
+                
+                if (data.jobs && data.jobs.length > 0) {
+                    var jobsHtml = '';
+                    for (var i = 0; i < data.jobs.length; i++) {
+                        var j = data.jobs[i];
+                        jobsHtml += '<div class="job">';
+                        jobsHtml += '<strong>' + j.job_title + '</strong><br>';
+                        jobsHtml += '<span class="salary">₹' + (j.salary || 'N/A') + '</span> | ';
+                        jobsHtml += '<span class="cgpa">Min CGPA: ' + j.min_CGPA + '</span>';
+                        jobsHtml += '</div>';
+                    }
+                    document.getElementById('company-jobs-' + companyId).innerHTML = jobsHtml;
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+        
+        loadCompanies();
+    </script>
+</body>
+</html>
+
+

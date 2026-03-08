@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jobs - Student Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #333; text-align: center; margin-bottom: 20px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .nav a { padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
+        .nav a:hover { background: #5568d3; }
+        .job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+        .job-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .job-card h3 { color: #667eea; margin-bottom: 10px; }
+        .job-card .company { color: #666; font-size: 1.1em; margin-bottom: 15px; }
+        .job-card .details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .job-card .detail { background: #f9f9f9; padding: 10px; border-radius: 5px; }
+        .job-card .detail strong { color: #333; }
+        .job-card .apply-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
+        .job-card .apply-section input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
+        .job-card .apply-section button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+        .job-card .apply-section button:hover { background: #218838; }
+        .job-card .applied { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; text-align: center; }
+        .job-card .eligible-list { margin-top: 15px; max-height: 200px; overflow-y: auto; }
+        .job-card .eligible-list h4 { color: #333; margin-bottom: 10px; }
+        .job-card .student { background: #f9f9f9; padding: 8px; margin: 5px 0; border-radius: 3px; display: flex; justify-content: space-between; }
+        .job-card .student .name { font-weight: bold; }
+        .job-card .student .cgpa { color: #667eea; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .error { text-align: center; padding: 40px; color: red; }
+        .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💼 Job Listings</h1>
+        <div class="nav">
+            <a href="/">Home</a>
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/students.html">Students</a>
+            <a href="/search.html">Search</a>
+            <a href="/companies.html">Companies</a>
+            <a href="/applications.html">Applications</a>
+            <a href="/analytics.html">Analytics</a>
+        </div>
+        
+        <div id="message"></div>
+        <div id="jobs" class="job-grid">
+            <p class="loading">Loading jobs...</p>
+        </div>
+    </div>
+    
+    <script>
+        async function loadJobs() {
+            try {
+                var res = await fetch('/api/jobs');
+                var jobs = await res.json();
+                
+                if (jobs.length === 0) {
+                    document.getElementById('jobs').innerHTML = '<p class="error">No jobs found</p>';
+                    return;
+                }
+                
+                var html = '';
+                for (var i = 0; i < jobs.length; i++) {
+                    var j = jobs[i];
+                    html += '<div class="job-card" id="job-' + j.job_id + '">';
+                    html += '<h3>' + j.job_title + '</h3>';
+                    html += '<p class="company">🏢 ' + j.company_name + ' | 📍 ' + j.location + '</p>';
+                    html += '<div class="details">';
+                    html += '<div class="detail"><strong>Min CGPA:</strong> ' + j.min_CGPA + '</div>';
+                    html += '<div class="detail"><strong>Salary:</strong> ₹' + (j.salary || 'N/A') + '</div>';
+                    html += '<div class="detail"><strong>Vacancies:</strong> ' + (j.vacancies || 'N/A') + '</div>';
+                    html += '<div class="detail"><strong>Applied:</strong> ' + (j.applications || 0) + '</div>';
+                    html += '</div>';
+                    
+                    html += '<div class="apply-section">';
+                    html += '<input type="number" id="student-id-' + j.job_id + '" placeholder="Enter Student ID to apply">';
+                    html += '<button onclick="applyForJob(' + j.job_id + ')">Apply Now</button>';
+                    html += '</div>';
+                    
+                    html += '<div class="eligible-list">';
+                    html += '<h4>Top Eligible Students</h4>';
+                    html += '<div id="eligible-' + j.job_id + '">Loading...</div>';
+                    html += '</div>';
+                    
+                    html += '</div>';
+                    
+                    loadEligibleStudents(j.job_id);
+                }
+                document.getElementById('jobs').innerHTML = html;
+                
+            } catch(e) {
+                console.error(e);
+                document.getElementById('jobs').innerHTML = '<p class="error">Error loading jobs. Make sure Flask server is running!</p>';
+            }
+        }
+        
+        async function loadEligibleStudents(jobId) {
+            try {
+                var res = await fetch('/api/jobs/' + jobId + '/eligible');
+                var data = await res.json();
+                
+                var html = '';
+                if (data.eligible_students && data.eligible_students.length > 0) {
+                    var limit = Math.min(5, data.eligible_students.length);
+                    for (var i = 0; i < limit; i++) {
+                        var s = data.eligible_students[i];
+                        html += '<div class="student">';
+                        html += '<span class="name">' + s.name + '</span>';
+                        html += '<span class="cgpa">CGPA: ' + s.CGPA + '</span>';
+                        html += '</div>';
+                    }
+                } else {
+                    html = '<p style="color:#666;">No eligible students</p>';
+                }
+                
+                document.getElementById('eligible-' + jobId).innerHTML = html;
+                
+            } catch(e) {
+                document.getElementById('eligible-' + jobId).innerHTML = '<p style="color:red;">Error loading</p>';
+            }
+        }
+        
+        async function applyForJob(jobId) {
+            var studentId = document.getElementById('student-id-' + jobId).value;
+            
+            if (!studentId) {
+                alert('Please enter a Student ID');
+                return;
+            }
+            
+            try {
+                var res = await fetch('/api/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: parseInt(studentId),
+                        job_id: jobId
+                    })
+                });
+                
+                var data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('message').innerHTML = '<div class="success">' + data.message + '</div>';
+                    loadJobs();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        loadJobs();
+    </script>
+</body>
+</html>
+
+

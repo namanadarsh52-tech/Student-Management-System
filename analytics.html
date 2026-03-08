@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics - Student Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #333; text-align: center; margin-bottom: 20px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .nav a { padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
+        .nav a:hover { background: #5568d3; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
+        .stat-card h3 { color: #667eea; font-size: 2.5em; }
+        .stat-card p { color: #666; }
+        .chart-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .chart-card h3 { margin-bottom: 15px; color: #333; text-align: center; }
+        .bar { display: flex; align-items: center; margin: 12px 0; }
+        .bar-label { width: 100px; font-weight: 500; }
+        .bar-fill { flex: 1; height: 25px; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 5px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-weight: bold; min-width: 40px; }
+        .chart-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .error { text-align: center; padding: 40px; color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Analytics Dashboard</h1>
+        <div class="nav">
+            <a href="/">Home</a>
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/students.html">Students</a>
+            <a href="/search.html">Search</a>
+            <a href="/jobs.html">Jobs</a>
+            <a href="/companies.html">Companies</a>
+            <a href="/applications.html">Applications</a>
+        </div>
+        
+        <div class="stats-grid" id="statsGrid">
+            <p class="loading">Loading analytics...</p>
+        </div>
+        
+        <div class="chart-section">
+            <div class="chart-card">
+                <h3>Students by Branch</h3>
+                <div id="branchChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Students by Year</h3>
+                <div id="yearChart"></div>
+            </div>
+        </div>
+        
+        <div class="chart-section">
+            <div class="chart-card">
+                <h3>CGPA Distribution</h3>
+                <div id="cgpaChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Students by Gender</h3>
+                <div id="genderChart"></div>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Placement Overview</h3>
+            <div id="placementChart"></div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadAnalytics() {
+            try {
+                var res = await fetch('/api/analytics/stats');
+                var data = await res.json();
+                
+                // Stats
+                var statsHtml = '';
+                statsHtml += '<div class="stat-card"><h3>' + data.total_students + '</h3><p>Total Students</p></div>';
+                statsHtml += '<div class="stat-card"><h3>' + data.average_cgpa + '</h3><p>Avg CGPA</p></div>';
+                statsHtml += '<div class="stat-card"><h3>' + data.max_cgpa + '</h3><p>Highest CGPA</p></div>';
+                statsHtml += '<div class="stat-card"><h3>' + data.min_cgpa + '</h3><p>Lowest CGPA</p></div>';
+                
+                if (data.placement_stats) {
+                    statsHtml += '<div class="stat-card"><h3>' + data.placement_stats.total_companies + '</h3><p>Companies</p></div>';
+                    statsHtml += '<div class="stat-card"><h3>' + data.placement_stats.total_jobs + '</h3><p>Jobs</p></div>';
+                    statsHtml += '<div class="stat-card"><h3>' + data.placement_stats.placed + '</h3><p>Placed</p></div>';
+                    statsHtml += '<div class="stat-card"><h3>' + data.placement_stats.pending + '</h3><p>Pending</p></div>';
+                }
+                
+                document.getElementById('statsGrid').innerHTML = statsHtml;
+                
+                // Branch chart
+                if (data.by_branch && data.by_branch.length > 0) {
+                    var maxBranch = Math.max.apply(null, data.by_branch.map(function(b) { return b.count; }));
+                    var html = '';
+                    data.by_branch.forEach(function(b) {
+                        var w = (b.count / maxBranch) * 100;
+                        html += '<div class="bar"><span class="bar-label">' + b.branch + '</span><div class="bar-fill" style="width:' + w + '%">' + b.count + '</div></div>';
+                    });
+                    document.getElementById('branchChart').innerHTML = html;
+                }
+                
+                // Year chart
+                if (data.by_year && data.by_year.length > 0) {
+                    var maxYear = Math.max.apply(null, data.by_year.map(function(y) { return y.count; }));
+                    var html = '';
+                    data.by_year.forEach(function(y) {
+                        var w = (y.count / maxYear) * 100;
+                        html += '<div class="bar"><span class="bar-label">Year ' + y.year + '</span><div class="bar-fill" style="width:' + w + '%">' + y.count + '</div></div>';
+                    });
+                    document.getElementById('yearChart').innerHTML = html;
+                }
+                
+                // CGPA chart
+                var cgpa = data.cgpa_distribution;
+                var maxCGPA = Math.max(cgpa['9_plus'], cgpa['7.5_9'], cgpa['6_7.5'], cgpa['below_6']);
+                var cgpaHtml = '';
+                var labels = [
+                    {k:'9_plus',l:'9+ CGPA'},
+                    {k:'7.5_9',l:'7.5-9'},
+                    {k:'6_7.5',l:'6-7.5'},
+                    {k:'below_6',l:'<6'}
+                ];
+                labels.forEach(function(x) {
+                    var w = (cgpa[x.k] / maxCGPA) * 100;
+                    cgpaHtml += '<div class="bar"><span class="bar-label">' + x.l + '</span><div class="bar-fill" style="width:' + w + '%">' + cgpa[x.k] + '</div></div>';
+                });
+                document.getElementById('cgpaChart').innerHTML = cgpaHtml;
+                
+                // Gender chart
+                if (data.by_gender && data.by_gender.length > 0) {
+                    var maxGender = Math.max.apply(null, data.by_gender.map(function(g) { return g.count; }));
+                    var html = '';
+                    data.by_gender.forEach(function(g) {
+                        var w = (g.count / maxGender) * 100;
+                        html += '<div class="bar"><span class="bar-label">' + g.gender + '</span><div class="bar-fill" style="width:' + w + '%">' + g.count + '</div></div>';
+                    });
+                    document.getElementById('genderChart').innerHTML = html;
+                }
+                
+                // Placement chart
+                if (data.placement_stats) {
+                    var p = data.placement_stats;
+                    var maxP = Math.max(p.placed, p.pending, (p.total_applications - p.placed - p.pending));
+                    var pHtml = '';
+                    var pData = [
+                        {l:'Placed', v:p.placed, c:'#28a745'},
+                        {l:'Pending', v:p.pending, c:'#ffc107'},
+                        {l:'Not Applied', v:p.total_applications - p.placed - p.pending, c:'#6c757d'}
+                    ];
+                    pData.forEach(function(x) {
+                        var w = (x.v / maxP) * 100;
+                        pHtml += '<div class="bar"><span class="bar-label">' + x.l + '</span><div class="bar-fill" style="width:' + w + '%;background:' + x.c + '">' + x.v + '</div></div>';
+                    });
+                    document.getElementById('placementChart').innerHTML = pHtml;
+                }
+                
+            } catch(e) {
+                console.error(e);
+                document.getElementById('statsGrid').innerHTML = '<p class="error">Error loading analytics. Make sure Flask server is running!</p>';
+            }
+        }
+        
+        loadAnalytics();
+    </script>
+</body>
+</html>
+
+
